@@ -5,8 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
+import java.util.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import gr.uom.java.xmi.diff.*;
 import org.eclipse.jgit.lib.Repository;
 import org.refactoringminer.api.GitHistoryRefactoringMiner;
 import org.refactoringminer.api.GitService;
@@ -37,6 +40,8 @@ public class RefactoringMiner {
 			detectBetweenTags(args);
 		} else if (option.equalsIgnoreCase("-c")) {
 			detectAtCommit(args);
+		} else if (option.equalsIgnoreCase("-al")) {
+			detectAllWithLocationInformation(args);
 		} else {
 			throw argumentException();
 		}
@@ -231,6 +236,68 @@ public class RefactoringMiner {
 				"-bt <git-repo-folder> <start-tag> <end-tag>\t\t\tDetect refactorings Between <start-tag> and <end-tag> for project <git-repo-folder>");
 		System.out.println(
 				"-c <git-repo-folder> <commit-sha1>\t\t\t\tDetect refactorings at specified commit <commit-sha1> for project <git-repo-folder>");
+		System.out.println(
+				"-al <git-repo-folder> <branch>\t\t\t\t\tDetect all refactorings with location information at <branch> for <git-repo-folder>. If <branch> is not specified, commits from all branches are analyzed.");
+	}
+
+	private static void detectAllWithLocationInformation(String[] args) throws Exception {
+		if (args.length > 3) {
+			throw argumentException();
+		}
+		String folder = args[1];
+		String branch = null;
+		if (args.length == 3) {
+			branch = args[2];
+		}
+		GitService gitService = new GitServiceImpl();
+		try (Repository repo = gitService.openRepository(folder)) {
+			Path folderPath = Paths.get(folder);
+			String fileName = (branch == null) ? "all_refactorings.json" : "all_refactorings_" + branch + ".json";
+			String filePath = folderPath.toString() + "/" + fileName;
+			Files.deleteIfExists(Paths.get(filePath));
+
+			GitHistoryRefactoringMiner detector = new GitHistoryRefactoringMinerImpl();
+			Map<String, Object> json = new LinkedHashMap<>();
+			detector.detectAll(repo, branch, new RefactoringHandler() {
+				@Override
+				public void handle(String commitId, List<Refactoring> refactorings) {
+					if (refactorings.isEmpty()) {
+						System.out.println("No refactorings found in commit " + commitId);
+					} else {
+						System.out.println(refactorings.size() + " refactorings found in commit " + commitId);
+
+						List<Map<String, Object>> infos = new ArrayList<>();
+						for (Refactoring ref : refactorings) {
+							Map<String, Object> info = new LinkedHashMap<>();
+							info.put("name", ref.getName());
+							info.put("description", ref.toString());
+							info.put("parameters", getParameters(ref));
+							infos.add(info);
+						}
+						json.put(commitId, infos);
+					}
+				}
+
+				@Override
+				public void onFinish(int refactoringsCount, int commitsCount, int errorCommitsCount) {
+					try {
+						saveToFile(filePath, new ObjectMapper().writeValueAsString(json));
+					} catch (JsonProcessingException e) {
+						System.err.println("Error processing save refactorings to file");
+						e.printStackTrace(System.err);
+					}
+					System.out.println("Finish mining, result is saved to file: " + filePath);
+					System.out.println(String.format("Total count: [Commits: %d, Errors: %d, Refactorings: %d]",
+							commitsCount, errorCommitsCount, refactoringsCount));
+				}
+
+				@Override
+				public void handleException(String commit, Exception e) {
+					System.err.println("Error processing commit " + commit);
+					e.printStackTrace(System.err);
+				}
+			});
+		}
 	}
 
 	private static IllegalArgumentException argumentException() {
@@ -259,6 +326,52 @@ public class RefactoringMiner {
 
 	private static String getResultHeader() {
 		return "CommitId;RefactoringType;RefactoringDetail";
+	}
+
+	private static Map<String, Object> getParameters(Refactoring ref) {
+		Map<String, Object> map = new LinkedHashMap<>();
+		if (ref instanceof ExtractOperationRefactoring) {
+			ExtractOperationRefactoring eoref = (ExtractOperationRefactoring) ref;
+			map.put("src_method_parent", rangeToMap(eoref.getSourceOperationCodeRangeBeforeExtraction()));
+			map.put("src_method_child", rangeToMap(eoref.getSourceOperationCodeRangeAfterExtraction()));
+			map.put("extracted_method_child", rangeToMap(eoref.getExtractedOperationCodeRange()));
+			map.put("extracted_fragment_parend", rangeToMap(eoref.getExtractedCodeRangeFromSourceOperation()));
+			map.put("extracted_fragment_child", rangeToMap(eoref.getExtractedCodeRangeToExtractedOperation()));
+			map.put("invocation_child", rangeToMap(eoref.getExtractedOperationInvocationCodeRange()));
+		} else if (ref instanceof ExtractVariableRefactoring) {
+			ExtractVariableRefactoring evref = (ExtractVariableRefactoring) ref;
+			map.put("declaration_child", rangeToMap(evref.getExtractedVariableDeclarationCodeRange()));
+		} else if (ref instanceof InlineOperationRefactoring) {
+			InlineOperationRefactoring ioref = (InlineOperationRefactoring) ref;
+			map.put("target_method_parent", rangeToMap(ioref.getTargetOperationCodeRangeBeforeInline()));
+			map.put("target_method_child", rangeToMap(ioref.getTargetOperationCodeRangeAfterInline()));
+			map.put("inlined_method_parent", rangeToMap(ioref.getInlinedOperationCodeRange()));
+			map.put("inlined_fragment_parent", rangeToMap(ioref.getInlinedCodeRangeFromInlinedOperation()));
+			map.put("inlined_fragment_child", rangeToMap(ioref.getInlinedCodeRangeInTargetOperation()));
+			map.put("invocation_parent", rangeToMap(ioref.getInlinedOperationInvocationCodeRange()));
+		} else if (ref instanceof MoveAttributeRefactoring) {
+			MoveAttributeRefactoring maref = (MoveAttributeRefactoring) ref;
+			map.put("source_parent", rangeToMap(maref.getSourceAttributeCodeRangeBeforeMove()));
+			map.put("target_child", rangeToMap(maref.getTargetAttributeCodeRangeAfterMove()));
+		} else if (ref instanceof MoveOperationRefactoring) {
+			MoveOperationRefactoring moref = (MoveOperationRefactoring) ref;
+			map.put("source_parent", rangeToMap(moref.getSourceOperationCodeRangeBeforeMove()));
+			map.put("target_child", rangeToMap(moref.getTargetOperationCodeRangeAfterMove()));
+		} else if (ref instanceof RenameOperationRefactoring) {
+			RenameOperationRefactoring roref = (RenameOperationRefactoring) ref;
+			map.put("source_parent", rangeToMap(roref.getSourceOperationCodeRangeBeforeRename()));
+			map.put("target_child", rangeToMap(roref.getTargetOperationCodeRangeAfterRename()));
+		}
+		return map;
+	}
+
+	private static Map<String, Integer> rangeToMap(CodeRange range) {
+		Map<String, Integer> map = new LinkedHashMap<>();
+		map.put("start_line", range.getStartLine());
+		map.put("end_line", range.getEndLine());
+		map.put("start_column", range.getStartColumn());
+		map.put("end_column", range.getEndColumn());
+		return map;
 	}
 
 }
