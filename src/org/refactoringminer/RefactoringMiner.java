@@ -257,7 +257,7 @@ public class RefactoringMiner {
 			Files.deleteIfExists(Paths.get(filePath));
 
 			GitHistoryRefactoringMiner detector = new GitHistoryRefactoringMinerImpl();
-			Map<String, Object> json = new LinkedHashMap<>();
+			ObjectMapper mapper = new ObjectMapper();
 			detector.detectAll(repo, branch, new RefactoringHandler() {
 				@Override
 				public void handle(String commitId, List<Refactoring> refactorings) {
@@ -266,26 +266,24 @@ public class RefactoringMiner {
 					} else {
 						System.out.println(refactorings.size() + " refactorings found in commit " + commitId);
 
-						List<Map<String, Object>> infos = new ArrayList<>();
 						for (Refactoring ref : refactorings) {
 							Map<String, Object> info = new LinkedHashMap<>();
+							info.put("commit_id", commitId);
 							info.put("name", ref.getName());
 							info.put("description", ref.toString());
 							info.put("parameters", getParameters(ref));
-							infos.add(info);
+							try {
+								saveToFile(filePath, mapper.writeValueAsString(info));
+							} catch (JsonProcessingException e) {
+								System.err.println("Error processing save refactorings to file");
+								e.printStackTrace(System.err);
+							}
 						}
-						json.put(commitId, infos);
 					}
 				}
 
 				@Override
 				public void onFinish(int refactoringsCount, int commitsCount, int errorCommitsCount) {
-					try {
-						saveToFile(filePath, new ObjectMapper().writeValueAsString(json));
-					} catch (JsonProcessingException e) {
-						System.err.println("Error processing save refactorings to file");
-						e.printStackTrace(System.err);
-					}
 					System.out.println("Finish mining, result is saved to file: " + filePath);
 					System.out.println(String.format("Total count: [Commits: %d, Errors: %d, Refactorings: %d]",
 							commitsCount, errorCommitsCount, refactoringsCount));
