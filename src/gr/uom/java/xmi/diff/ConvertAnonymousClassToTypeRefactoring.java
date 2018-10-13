@@ -32,4 +32,11 @@ public class ConvertAnonymousClassToTypeRefactoring implements Refactoring {
 		return RefactoringType.CONVERT_ANONYMOUS_CLASS_TO_TYPE;
 	}
 
+	public UMLAnonymousClass getAnonymousClass() {
+		return anonymousClass;
+	}
+
+	public UMLClass getAddedClass() {
+		return addedClass;
+	}
 }
