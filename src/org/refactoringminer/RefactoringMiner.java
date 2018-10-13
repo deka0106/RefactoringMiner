@@ -268,7 +268,7 @@ public class RefactoringMiner {
 
 						for (Refactoring ref : refactorings) {
 							Map<String, Object> info = new LinkedHashMap<>();
-							info.put("commit_id", commitId);
+							info.put("commitId", commitId);
 							info.put("name", ref.getName());
 							info.put("description", ref.toString());
 							info.put("parameters", getParameters(ref));
@@ -326,49 +326,125 @@ public class RefactoringMiner {
 		return "CommitId;RefactoringType;RefactoringDetail";
 	}
 
-	private static Map<String, Object> getParameters(Refactoring ref) {
-		Map<String, Object> map = new LinkedHashMap<>();
-		if (ref instanceof ExtractOperationRefactoring) {
-			ExtractOperationRefactoring eoref = (ExtractOperationRefactoring) ref;
-			map.put("src_method_parent", rangeToMap(eoref.getSourceOperationCodeRangeBeforeExtraction()));
-			map.put("src_method_child", rangeToMap(eoref.getSourceOperationCodeRangeAfterExtraction()));
-			map.put("extracted_method_child", rangeToMap(eoref.getExtractedOperationCodeRange()));
-			map.put("extracted_fragment_parend", rangeToMap(eoref.getExtractedCodeRangeFromSourceOperation()));
-			map.put("extracted_fragment_child", rangeToMap(eoref.getExtractedCodeRangeToExtractedOperation()));
-			map.put("invocation_child", rangeToMap(eoref.getExtractedOperationInvocationCodeRange()));
-		} else if (ref instanceof ExtractVariableRefactoring) {
-			ExtractVariableRefactoring evref = (ExtractVariableRefactoring) ref;
-			map.put("declaration_child", rangeToMap(evref.getExtractedVariableDeclarationCodeRange()));
-		} else if (ref instanceof InlineOperationRefactoring) {
-			InlineOperationRefactoring ioref = (InlineOperationRefactoring) ref;
-			map.put("target_method_parent", rangeToMap(ioref.getTargetOperationCodeRangeBeforeInline()));
-			map.put("target_method_child", rangeToMap(ioref.getTargetOperationCodeRangeAfterInline()));
-			map.put("inlined_method_parent", rangeToMap(ioref.getInlinedOperationCodeRange()));
-			map.put("inlined_fragment_parent", rangeToMap(ioref.getInlinedCodeRangeFromInlinedOperation()));
-			map.put("inlined_fragment_child", rangeToMap(ioref.getInlinedCodeRangeInTargetOperation()));
-			map.put("invocation_parent", rangeToMap(ioref.getInlinedOperationInvocationCodeRange()));
-		} else if (ref instanceof MoveAttributeRefactoring) {
-			MoveAttributeRefactoring maref = (MoveAttributeRefactoring) ref;
-			map.put("source_parent", rangeToMap(maref.getSourceAttributeCodeRangeBeforeMove()));
-			map.put("target_child", rangeToMap(maref.getTargetAttributeCodeRangeAfterMove()));
-		} else if (ref instanceof MoveOperationRefactoring) {
-			MoveOperationRefactoring moref = (MoveOperationRefactoring) ref;
-			map.put("source_parent", rangeToMap(moref.getSourceOperationCodeRangeBeforeMove()));
-			map.put("target_child", rangeToMap(moref.getTargetOperationCodeRangeAfterMove()));
-		} else if (ref instanceof RenameOperationRefactoring) {
-			RenameOperationRefactoring roref = (RenameOperationRefactoring) ref;
-			map.put("source_parent", rangeToMap(roref.getSourceOperationCodeRangeBeforeRename()));
-			map.put("target_child", rangeToMap(roref.getTargetOperationCodeRangeAfterRename()));
+	private static Map<String, Object> getParameters(Refactoring refactoring) {
+		Map<String, Object> parameters = new LinkedHashMap<>();
+		if (refactoring instanceof ConvertAnonymousClassToTypeRefactoring) {
+			ConvertAnonymousClassToTypeRefactoring ref = (ConvertAnonymousClassToTypeRefactoring) refactoring;
+			parameters.put("anonymousClass", ref.getAnonymousClass().toString());
+			parameters.put("addedClass", ref.getAddedClass().toString());
+		} else if (refactoring instanceof ExtractAndMoveOperationRefactoring) {
+			ExtractAndMoveOperationRefactoring ref = (ExtractAndMoveOperationRefactoring) refactoring;
+			parameters.put("extractedOperation", ref.getExtractedOperation().toString());
+			parameters.put("sourceOperationBeforeExtraction", ref.getSourceOperationBeforeExtraction().toString());
+			parameters.put("sourceOperationClassBeforeExtraction", ref.getSourceOperationBeforeExtraction().getClassName());
+			parameters.put("extractedOperationClass", ref.getExtractedOperation().getClassName());
+		} else if (refactoring instanceof ExtractOperationRefactoring) {
+			ExtractOperationRefactoring ref = (ExtractOperationRefactoring) refactoring;
+			parameters.put("sourceOperationCodeRangeBeforeExtraction", rangeToMap(ref.getSourceOperationCodeRangeBeforeExtraction()));
+			parameters.put("sourceOperationCodeRangeAfterExtraction", rangeToMap(ref.getSourceOperationCodeRangeAfterExtraction()));
+			parameters.put("extractedOperationCodeRange", rangeToMap(ref.getExtractedOperationCodeRange()));
+			parameters.put("extractedCodeRangeFromSourceOperation", rangeToMap(ref.getExtractedCodeRangeFromSourceOperation()));
+			parameters.put("extractedCodeRangeToExtractedOperation", rangeToMap(ref.getExtractedCodeRangeToExtractedOperation()));
+			parameters.put("extractedOperationInvocationCodeRange", rangeToMap(ref.getExtractedOperationInvocationCodeRange()));
+			parameters.put("extractedOperation", ref.getExtractedOperation().toString());
+			parameters.put("sourceOperationBeforeExtraction", ref.getSourceOperationBeforeExtraction().toString());
+			parameters.put("sourceOperationClassBeforeExtraction", ref.getSourceOperationBeforeExtraction().getClassName());
+			parameters.put("sourceOperationClassAfterExtraction", ref.getSourceOperationAfterExtraction().getClassName());
+		} else if (refactoring instanceof ExtractSuperclassRefactoring) {
+			ExtractSuperclassRefactoring ref = (ExtractSuperclassRefactoring) refactoring;
+			parameters.put("extractedClass", ref.getExtractedClass().toString());
+			parameters.put("subclassSet", ref.getSubclassSet());
+		} else if (refactoring instanceof ExtractVariableRefactoring) {
+			ExtractVariableRefactoring ref = (ExtractVariableRefactoring) refactoring;
+			parameters.put("extractedVariableDeclarationCodeRange", rangeToMap(ref.getExtractedVariableDeclarationCodeRange()));
+			parameters.put("variableDeclaration", ref.getVariableDeclaration().toString());
+			parameters.put("operation", ref.getOperation().toString());
+			parameters.put("operationClass", ref.getOperation().getClassName());
+		} else if (refactoring instanceof InlineOperationRefactoring) {
+			InlineOperationRefactoring ref = (InlineOperationRefactoring) refactoring;
+			parameters.put("targetOperationCodeRangeBeforeInline", rangeToMap(ref.getTargetOperationCodeRangeBeforeInline()));
+			parameters.put("targetOperationCodeRangeAfterInline", rangeToMap(ref.getTargetOperationCodeRangeAfterInline()));
+			parameters.put("inlinedOperationCodeRange", rangeToMap(ref.getInlinedOperationCodeRange()));
+			parameters.put("inlinedCodeRangeFromInlinedOperation", rangeToMap(ref.getInlinedCodeRangeFromInlinedOperation()));
+			parameters.put("inlinedCodeRangeInTargetOperation", rangeToMap(ref.getInlinedCodeRangeInTargetOperation()));
+			parameters.put("inlinedOperationInvocationCodeRange", rangeToMap(ref.getInlinedOperationInvocationCodeRange()));
+			parameters.put("inlinedOperation", ref.getInlinedOperation().toString());
+			parameters.put("targetOperationAfterInline", ref.getTargetOperationAfterInline().toString());
+			parameters.put("targetOperationClassAfterInline", ref.getTargetOperationAfterInline().getClassName());
+		} else if (refactoring instanceof MoveAndRenameClassRefactoring) {
+			MoveAndRenameClassRefactoring ref = (MoveAndRenameClassRefactoring) refactoring;
+			parameters.put("originalClass", ref.getOriginalClassName());
+			parameters.put("renamedClass", ref.getRenamedClassName());
+		} else if (refactoring instanceof MoveAttributeRefactoring) {
+			MoveAttributeRefactoring ref = (MoveAttributeRefactoring) refactoring;
+			parameters.put("sourceAttributeCodeRangeBeforeMove", rangeToMap(ref.getSourceAttributeCodeRangeBeforeMove()));
+			parameters.put("targetAttributeCodeRangeAfterMove", rangeToMap(ref.getTargetAttributeCodeRangeAfterMove()));
+			parameters.put("movedAttribute", ref.getMovedAttribute().toString());
+			parameters.put("originalAttributeClass", ref.getOriginalAttribute().getClassName());
+			parameters.put("movedAttributeClass", ref.getMovedAttribute().getClassName());
+		} else if (refactoring instanceof MoveClassRefactoring) {
+			MoveClassRefactoring ref = (MoveClassRefactoring) refactoring;
+			parameters.put("originalClass", ref.getOriginalClassName());
+			parameters.put("movedClass", ref.getMovedClassName());
+		} else if (refactoring instanceof MoveOperationRefactoring) {
+			MoveOperationRefactoring ref = (MoveOperationRefactoring) refactoring;
+			parameters.put("sourceOperationCodeRangeBeforeMove", rangeToMap(ref.getSourceOperationCodeRangeBeforeMove()));
+			parameters.put("targetOperationCodeRangeAfterMove", rangeToMap(ref.getTargetOperationCodeRangeAfterMove()));
+			parameters.put("originalOperation", ref.getOriginalOperation().toString());
+			parameters.put("originalOperationClass", ref.getOriginalOperation().getClassName());
+			parameters.put("movedOperation", ref.getMovedOperation().toString());
+			parameters.put("movedOperationClass", ref.getMovedOperation().getClassName());
+		} else if (refactoring instanceof MoveSourceFolderRefactoring) {
+			MoveSourceFolderRefactoring ref = (MoveSourceFolderRefactoring) refactoring;
+			final RenamePattern pattern = ref.getPattern();
+			parameters.put("originalPath", pattern.getOriginalPath().endsWith("/") ?
+					pattern.getOriginalPath().substring(0, pattern.getOriginalPath().length() - 1) :
+					pattern.getOriginalPath());
+			parameters.put("movedPath", pattern.getMovedPath().endsWith("/") ?
+					pattern.getMovedPath().substring(0, pattern.getMovedPath().length() - 1) :
+					pattern.getMovedPath());
+		} else if (refactoring instanceof RenameAttributeRefactoring) {
+			RenameAttributeRefactoring ref = (RenameAttributeRefactoring) refactoring;
+			parameters.put("originalAttribute", ref.getOriginalAttribute().toString());
+			parameters.put("renamedAttribute", ref.getRenamedAttribute());
+			parameters.put("classNameAfter", ref.getClassNameAfter());
+		} else if (refactoring instanceof RenameClassRefactoring) {
+			RenameClassRefactoring ref = (RenameClassRefactoring) refactoring;
+			parameters.put("originalClass", ref.getOriginalClassName());
+			parameters.put("renamedClass", ref.getRenamedClassName());
+		} else if (refactoring instanceof RenameOperationRefactoring) {
+			RenameOperationRefactoring ref = (RenameOperationRefactoring) refactoring;
+			parameters.put("sourceOperationCodeRangeBeforeRename", rangeToMap(ref.getSourceOperationCodeRangeBeforeRename()));
+			parameters.put("targetOperationCodeRangeAfterRename", rangeToMap(ref.getTargetOperationCodeRangeAfterRename()));
+			parameters.put("originalOperation", ref.getOriginalOperation().toString());
+			parameters.put("renamedOperation", ref.getRenamedOperation().toString());
+			parameters.put("originalOperationClass", ref.getOriginalOperation().getClassName());
+			parameters.put("renamedOperationClass", ref.getRenamedOperation().getClassName());
+		} else if (refactoring instanceof RenamePackageRefactoring) {
+			RenamePackageRefactoring ref = (RenamePackageRefactoring) refactoring;
+			final RenamePattern pattern = ref.getPattern();
+			parameters.put("originalPath", pattern.getOriginalPath().endsWith(".") ?
+					pattern.getOriginalPath().substring(0, pattern.getOriginalPath().length() - 1) :
+					pattern.getOriginalPath());
+			parameters.put("movedPath", pattern.getMovedPath().endsWith(".") ?
+					pattern.getMovedPath().substring(0, pattern.getMovedPath().length() - 1) :
+					pattern.getMovedPath());
+		} else if (refactoring instanceof RenameVariableRefactoring) {
+			RenameVariableRefactoring ref = (RenameVariableRefactoring) refactoring;
+			parameters.put("originalVariable", ref.getOriginalVariable().toString());
+			parameters.put("renamedVariable", ref.getRenamedVariable().toString());
+			parameters.put("operationAfter", ref.getOperationAfter().toString());
+			parameters.put("operationAfterClass", ref.getOperationAfter().getClassName());
 		}
-		return map;
+		return parameters;
 	}
 
 	private static Map<String, Integer> rangeToMap(CodeRange range) {
 		Map<String, Integer> map = new LinkedHashMap<>();
-		map.put("start_line", range.getStartLine());
-		map.put("end_line", range.getEndLine());
-		map.put("start_column", range.getStartColumn());
-		map.put("end_column", range.getEndColumn());
+		map.put("startLine", range.getStartLine());
+		map.put("endLine", range.getEndLine());
+		map.put("startColumn", range.getStartColumn());
+		map.put("endColumn", range.getEndColumn());
 		return map;
 	}
 
