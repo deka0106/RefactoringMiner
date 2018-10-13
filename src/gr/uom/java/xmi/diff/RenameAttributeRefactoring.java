@@ -40,4 +40,20 @@ public class RenameAttributeRefactoring implements Refactoring {
 		sb.append(" in class ").append(classNameAfter);
 		return sb.toString();
 	}
+
+	public VariableDeclaration getOriginalAttribute() {
+		return originalAttribute;
+	}
+
+	public VariableDeclaration getRenamedAttribute() {
+		return renamedAttribute;
+	}
+
+	public String getClassNameBefore() {
+		return classNameBefore;
+	}
+
+	public String getClassNameAfter() {
+		return classNameAfter;
+	}
 }
