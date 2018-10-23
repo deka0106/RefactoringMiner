@@ -345,12 +345,14 @@ public class RefactoringMiner {
 			parameters.put("sourceOperationAfterExtraction", operationToMap(ref.getSourceOperationAfterExtraction()));
 		} else if (refactoring instanceof ExtractOperationRefactoring) {
 			ExtractOperationRefactoring ref = (ExtractOperationRefactoring) refactoring;
-			parameters.put("extractedOperation", operationToMap(ref.getExtractedOperation()));
-			parameters.put("sourceOperationBeforeExtraction", operationToMap(ref.getSourceOperationBeforeExtraction()));
+			Map<String, Object> extractedOperation = operationToMap(ref.getExtractedOperation());
+			extractedOperation.put("fragments", rangeToMap(ref.getExtractedCodeRangeToExtractedOperation()));
+			parameters.put("extractedOperation", extractedOperation);
+			Map<String, Object> sourceOperationBeforeExtraction = operationToMap(ref.getSourceOperationBeforeExtraction());
+			sourceOperationBeforeExtraction.put("fragments", rangeToMap(ref.getExtractedCodeRangeFromSourceOperation()));
+			parameters.put("sourceOperationBeforeExtraction", sourceOperationBeforeExtraction);
 			parameters.put("sourceOperationAfterExtraction", operationToMap(ref.getSourceOperationAfterExtraction()));
 			parameters.put("extractedOperationInvocation", operationInvocationToMap(ref.getExtractedOperationInvocation()));
-			parameters.put("extractedCodeRangeFromSourceOperation", rangeToMap(ref.getExtractedCodeRangeFromSourceOperation()));
-			parameters.put("extractedCodeRangeToExtractedOperation", rangeToMap(ref.getExtractedCodeRangeToExtractedOperation()));
 		} else if (refactoring instanceof ExtractSuperclassRefactoring) {
 			ExtractSuperclassRefactoring ref = (ExtractSuperclassRefactoring) refactoring;
 			parameters.put("extractedClass", classToMap(ref.getExtractedClass()));
@@ -361,12 +363,14 @@ public class RefactoringMiner {
 			parameters.put("operation", operationToMap(ref.getOperation()));
 		} else if (refactoring instanceof InlineOperationRefactoring) {
 			InlineOperationRefactoring ref = (InlineOperationRefactoring) refactoring;
-			parameters.put("inlinedOperation", operationToMap(ref.getInlinedOperation()));
+			Map<String, Object> inlinedOperation = operationToMap(ref.getInlinedOperation());
+			inlinedOperation.put("fragments", rangeToMap(ref.getInlinedCodeRangeFromInlinedOperation()));
+			parameters.put("inlinedOperation", inlinedOperation);
+			Map<String, Object> targetOperationAfterInline =  operationToMap(ref.getTargetOperationAfterInline());
+			targetOperationAfterInline.put("fragments", rangeToMap(ref.getInlinedCodeRangeInTargetOperation()));
+			parameters.put("targetOperationAfterInline", targetOperationAfterInline);
 			parameters.put("targetOperationBeforeInline", operationToMap(ref.getTargetOperationBeforeInline()));
-			parameters.put("targetOperationAfterInline", operationToMap(ref.getTargetOperationAfterInline()));
 			parameters.put("inlinedOperationInvocation", operationInvocationToMap(ref.getInlinedOperationInvocation()));
-			parameters.put("inlinedCodeRangeFromInlinedOperation", rangeToMap(ref.getInlinedCodeRangeFromInlinedOperation()));
-			parameters.put("inlinedCodeRangeInTargetOperation", rangeToMap(ref.getInlinedCodeRangeInTargetOperation()));
 		} else if (refactoring instanceof MoveAndRenameClassRefactoring) {
 			MoveAndRenameClassRefactoring ref = (MoveAndRenameClassRefactoring) refactoring;
 			parameters.put("originalClass", classToMap(ref.getOriginalClass()));
