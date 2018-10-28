@@ -125,4 +125,12 @@ public class InlineOperationRefactoring implements Refactoring {
 	public CodeRange getInlinedOperationInvocationCodeRange() {
 		return inlinedOperationInvocation.codeRange();
 	}
+
+	public Set<AbstractCodeFragment> getInlinedCodeFragmentsFromInlinedOperation() {
+		return inlinedCodeFragmentsFromInlinedOperation;
+	}
+
+	public Set<AbstractCodeFragment> getInlinedCodeFragmentsInTargetOperation() {
+		return inlinedCodeFragmentsInTargetOperation;
+	}
 }
