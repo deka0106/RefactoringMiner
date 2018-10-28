@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.uom.java.xmi.UMLAbstractClass;
 import gr.uom.java.xmi.UMLAttribute;
 import gr.uom.java.xmi.UMLOperation;
+import gr.uom.java.xmi.decomposition.AbstractCodeFragment;
 import gr.uom.java.xmi.decomposition.OperationInvocation;
 import gr.uom.java.xmi.decomposition.VariableDeclaration;
 import gr.uom.java.xmi.diff.*;
@@ -346,10 +347,10 @@ public class RefactoringMiner {
 		} else if (refactoring instanceof ExtractOperationRefactoring) {
 			ExtractOperationRefactoring ref = (ExtractOperationRefactoring) refactoring;
 			Map<String, Object> extractedOperation = operationToMap(ref.getExtractedOperation());
-			extractedOperation.put("fragments", rangeToMap(ref.getExtractedCodeRangeToExtractedOperation()));
+			extractedOperation.put("fragments", codeFragmentSetToList(ref.getExtractedCodeFragmentsToExtractedOperation()));
 			parameters.put("extractedOperation", extractedOperation);
 			Map<String, Object> sourceOperationBeforeExtraction = operationToMap(ref.getSourceOperationBeforeExtraction());
-			sourceOperationBeforeExtraction.put("fragments", rangeToMap(ref.getExtractedCodeRangeFromSourceOperation()));
+			sourceOperationBeforeExtraction.put("fragments", codeFragmentSetToList(ref.getExtractedCodeFragmentsFromSourceOperation()));
 			parameters.put("sourceOperationBeforeExtraction", sourceOperationBeforeExtraction);
 			parameters.put("sourceOperationAfterExtraction", operationToMap(ref.getSourceOperationAfterExtraction()));
 			parameters.put("extractedOperationInvocation", operationInvocationToMap(ref.getExtractedOperationInvocation()));
@@ -364,10 +365,10 @@ public class RefactoringMiner {
 		} else if (refactoring instanceof InlineOperationRefactoring) {
 			InlineOperationRefactoring ref = (InlineOperationRefactoring) refactoring;
 			Map<String, Object> inlinedOperation = operationToMap(ref.getInlinedOperation());
-			inlinedOperation.put("fragments", rangeToMap(ref.getInlinedCodeRangeFromInlinedOperation()));
+			inlinedOperation.put("fragments", codeFragmentSetToList(ref.getInlinedCodeFragmentsFromInlinedOperation()));
 			parameters.put("inlinedOperation", inlinedOperation);
-			Map<String, Object> targetOperationAfterInline =  operationToMap(ref.getTargetOperationAfterInline());
-			targetOperationAfterInline.put("fragments", rangeToMap(ref.getInlinedCodeRangeInTargetOperation()));
+			Map<String, Object> targetOperationAfterInline = operationToMap(ref.getTargetOperationAfterInline());
+			targetOperationAfterInline.put("fragments", codeFragmentSetToList(ref.getInlinedCodeFragmentsInTargetOperation()));
 			parameters.put("targetOperationAfterInline", targetOperationAfterInline);
 			parameters.put("targetOperationBeforeInline", operationToMap(ref.getTargetOperationBeforeInline()));
 			parameters.put("inlinedOperationInvocation", operationInvocationToMap(ref.getInlinedOperationInvocation()));
@@ -465,6 +466,14 @@ public class RefactoringMiner {
 		map.put("file", vd.getLocationInfo().getFilePath());
 		map.put("range", rangeToMap(vd.codeRange()));
 		return map;
+	}
+
+	private static List<Map<String, Integer>> codeFragmentSetToList(Set<AbstractCodeFragment> cfs) {
+		List<Map<String, Integer>> list = new ArrayList<>();
+		cfs.forEach(cf -> {
+			list.add(rangeToMap(cf.getLocationInfo().codeRange()));
+		});
+		return list;
 	}
 
 	private static String removeIfEndWith(String string, String suffix) {
